@@ -38,6 +38,8 @@
 #define LOBOT_SERVO_LED_ERROR_WRITE      35
 #define LOBOT_SERVO_LED_ERROR_READ       36
 
+
+
 lx16driver::lx16driver(const char* device, bool loopFix)
     :operational(false)
     ,m_loopbackFix(loopFix)
@@ -74,6 +76,10 @@ void lx16driver::RevriteId(int id)
     buf[5] = id;//new id
     buf[6] = LobotCheckSum(buf);
     handle.Write(buf,7);
+    if(m_loopbackFix)
+    {
+        handle.Read(buf,7,100);
+    }
 }
 
 void lx16driver::ServoMoveTimeWrite(int id, int position, int time)
@@ -93,12 +99,17 @@ void lx16driver::ServoMoveTimeWrite(int id, int position, int time)
     buf[8] = GET_HIGH_BYTE(time);
     buf[9] = LobotCheckSum(buf);
     handle.Write(buf,10);
+    if(m_loopbackFix)
+    {
+         handle.Read(buf,10,100);
+    }
 }
 
 
 
 int lx16driver::ServoPostionRead(int id)
 {
+    handle.FlushReceiver(); 
     uint16_t ret;
     char buf[16];
     buf[0] = buf[1] = LOBOT_SERVO_FRAME_HEADER;
@@ -107,14 +118,12 @@ int lx16driver::ServoPostionRead(int id)
     buf[4] = LOBOT_SERVO_POS_READ;
     buf[5] = LobotCheckSum(buf);
     handle.Write(buf,6);
-    handle.FlushReceiver();
     if(m_loopbackFix)
     {//next line fix echo
-      //  std::cout<<std::endl<<"processing loopback fix"<<std::endl;
-        handle.ReadString(buf,0,6,100);
-
+        handle.Read(buf,6,100);
+    }
         // Read a string from the serial device
-        ret=handle.ReadString(buf,'\n',16,100);
+        ret=handle.Read(buf,16,100);
 
         if((buf[0]!=LOBOT_SERVO_FRAME_HEADER) || (buf[1]!=LOBOT_SERVO_FRAME_HEADER)){
           //   std::cout<<std::endl<<"found anomaly, trying to avoid"<<std::endl;
@@ -128,31 +137,39 @@ int lx16driver::ServoPostionRead(int id)
                 }
             }
         }
-    }
+    
                              // Read a maximum of 128 characters with a timeout of 5 seconds
     char crc = LobotCheckSum(buf);                                                                        // The final character of the string must be a line feed ('\n')
     if(buf[3]!=5 || buf[4]!=28)
     {
         std::cerr<<"Comminication error!"<<std::endl;
-
-    }
     for (int i=0;i<16;++i)
     {
         std::cout<<"buf["<<i<<"] = "<<std::dec<<(int)buf[i]<<" , "<<std::hex<<(int)buf[i]<<std::endl;
     }
+
+    }
     if(crc != buf[7])
     {
         std::cerr<<"CRC error"<<std::endl;
+        for (int i=0;i<16;++i)
+        {
+            std::cout<<"buf["<<i<<"] = "<<std::dec<<(int)buf[i]<<" , "<<std::hex<<(int)buf[i]<<std::endl;
+        }
         return 0;
     }
     // Close the connection with the device
     ret = BYTE_TO_HW(buf[6], buf[5]);
-    std::cout<<"ret from "<<ret<<std::endl;
+    handle.FlushReceiver(); 
+    
+//std::cout<<"ret from "<<ret<<s1td::endl;
     return ret;
 }
 
 int lx16driver::ServoVoltageRead(int id)
 {
+    handle.FlushReceiver();
+
     int ret;
     char buf[16];
 
@@ -163,14 +180,13 @@ int lx16driver::ServoVoltageRead(int id)
     buf[5] = LobotCheckSum(buf);
 
     handle.Write(buf,6);
-    handle.FlushReceiver();
     if(m_loopbackFix)
     {//next line fix echo
        // std::cout<<std::endl<<"processing loopback fix"<<std::endl;
-        handle.ReadString(buf,0,6,100);
+        handle.Read(buf,6,100);
 
         // Read a string from the serial device
-        ret=handle.ReadString(buf,'\n',16,100);
+        ret=handle.Read(buf,16,100);
 
         if((buf[0]!=LOBOT_SERVO_FRAME_HEADER) || (buf[1]!=LOBOT_SERVO_FRAME_HEADER)){
              std::cout<<std::endl<<"found anomaly, trying to avoid"<<std::endl;
@@ -187,7 +203,7 @@ int lx16driver::ServoVoltageRead(int id)
     }
 
     // Read a string from the serial device
-    ret=handle.ReadString(buf,'\n',16,100);                                // Read a maximum of 128 characters with a timeout of 5 seconds
+    ret=handle.Read(buf,16,100);                                // Read a maximum of 128 characters with a timeout of 5 seconds
     char crc = LobotCheckSum(buf);                                                                        // The final character of the string must be a line feed ('\n')
     if(buf[3]!=5 || buf[4]!=LOBOT_SERVO_VIN_READ)
     {
