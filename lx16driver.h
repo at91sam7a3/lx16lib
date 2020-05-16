@@ -24,7 +24,7 @@ public:
 //    void ServoVoltageLimitWrite(int id, int minVoltage, int maxVoltage);
 //    void ServoVoltageLimitRead(int id, int& minVoltage, int& maxVoltage);
 
-    int ServoPostionRead(int id);
+    int ServoPositionRead(int id);
     int ServoVoltageRead(int id);
  //   int ServoTemperatureRead(int id);
 

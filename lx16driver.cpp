@@ -101,13 +101,13 @@ void lx16driver::ServoMoveTimeWrite(int id, int position, int time)
     handle.Write(buf,10);
     if(m_loopbackFix)
     {
-         handle.Read(buf,10,100);
+         handle.Read(buf,10,10);
     }
 }
 
 
 
-int lx16driver::ServoPostionRead(int id)
+int lx16driver::ServoPositionRead(int id)
 {
     handle.FlushReceiver(); 
     uint16_t ret;
@@ -120,10 +120,10 @@ int lx16driver::ServoPostionRead(int id)
     handle.Write(buf,6);
     if(m_loopbackFix)
     {//next line fix echo
-        handle.Read(buf,6,100);
+        handle.Read(buf,6,10);
     }
         // Read a string from the serial device
-        ret=handle.Read(buf,16,100);
+        ret=handle.Read(buf,16,10);
 
         if((buf[0]!=LOBOT_SERVO_FRAME_HEADER) || (buf[1]!=LOBOT_SERVO_FRAME_HEADER)){
           //   std::cout<<std::endl<<"found anomaly, trying to avoid"<<std::endl;
