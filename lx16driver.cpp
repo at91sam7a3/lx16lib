@@ -41,24 +41,22 @@
 
 
 lx16driver::lx16driver(const char* device, bool loopFix)
-    :operational(false)
-    ,m_loopbackFix(loopFix)
+    : operational(false)
+    , m_loopbackFix(loopFix)
 {
-
     int Ret = handle.Open(device,115200);
     if (Ret!=1) {
         std::cout<<"Opening serial port "<<device<<" at 115200 "<<std::endl;
         std::cerr<<"ERROR: Comport not availabe!"<<std::endl;
         return;
     }
-  //  std::cout<<"seial port opened"<<std::endl;
     operational = true;
     handle.FlushReceiver();
 }
 
 lx16driver::~lx16driver()
 {
-     handle.Close();
+    handle.Close();
 }
 
 bool lx16driver::isOperational()
@@ -86,9 +84,9 @@ void lx16driver::ServoMoveTimeWrite(int id, int position, int time)
 {
     char buf[10];
     if(position < 0)
-      position = 0;
+        position = 0;
     if(position > 1000)
-      position = 1000;
+        position = 1000;
     buf[0] = buf[1] = LOBOT_SERVO_FRAME_HEADER;
     buf[2] = id;
     buf[3] = 7;
@@ -101,15 +99,13 @@ void lx16driver::ServoMoveTimeWrite(int id, int position, int time)
     handle.Write(buf,10);
     if(m_loopbackFix)
     {
-         handle.Read(buf,10,10);
+        handle.Read(buf,10,10);
     }
 }
 
-
-
 int lx16driver::ServoPositionRead(int id)
 {
-    handle.FlushReceiver(); 
+    handle.FlushReceiver();
     uint16_t ret;
     char buf[16];
     buf[0] = buf[1] = LOBOT_SERVO_FRAME_HEADER;
@@ -122,31 +118,29 @@ int lx16driver::ServoPositionRead(int id)
     {//next line fix echo
         handle.Read(buf,6,10);
     }
-        // Read a string from the serial device
-        ret=handle.Read(buf,16,10);
+    // Read a string from the serial device
+    ret=handle.Read(buf,16,10);
 
-        if((buf[0]!=LOBOT_SERVO_FRAME_HEADER) || (buf[1]!=LOBOT_SERVO_FRAME_HEADER)){
-          //   std::cout<<std::endl<<"found anomaly, trying to avoid"<<std::endl;
-            for(size_t i=1;i<5;++i)
+    if((buf[0]!=LOBOT_SERVO_FRAME_HEADER) || (buf[1]!=LOBOT_SERVO_FRAME_HEADER)){
+        for(size_t i=1;i<5;++i)
+        {
+            if((buf[i]==LOBOT_SERVO_FRAME_HEADER) && (buf[i+1]==LOBOT_SERVO_FRAME_HEADER))
             {
-                if((buf[i]==LOBOT_SERVO_FRAME_HEADER) && (buf[i+1]==LOBOT_SERVO_FRAME_HEADER))
-                {
-                    memcpy(&buf[0],&buf[i],16-i);
-                  //  std::cout<<std::endl<<"avoided"<<std::endl;
-                    break;
-                }
+                memcpy(&buf[0],&buf[i],16-i);
+                break;
             }
         }
+    }
     
-                             // Read a maximum of 128 characters with a timeout of 5 seconds
+    // Read a maximum of 128 characters with a timeout of 5 seconds
     char crc = LobotCheckSum(buf);                                                                        // The final character of the string must be a line feed ('\n')
     if(buf[3]!=5 || buf[4]!=28)
     {
         std::cerr<<"Comminication error!"<<std::endl;
-    for (int i=0;i<16;++i)
-    {
-        std::cout<<"buf["<<i<<"] = "<<std::dec<<(int)buf[i]<<" , "<<std::hex<<(int)buf[i]<<std::endl;
-    }
+        for (int i=0;i<16;++i)
+        {
+            std::cout<<"buf["<<i<<"] = "<<std::dec<<(int)buf[i]<<" , "<<std::hex<<(int)buf[i]<<std::endl;
+        }
 
     }
     if(crc != buf[7])
@@ -160,19 +154,15 @@ int lx16driver::ServoPositionRead(int id)
     }
     // Close the connection with the device
     ret = BYTE_TO_HW(buf[6], buf[5]);
-    handle.FlushReceiver(); 
-    
-//std::cout<<"ret from "<<ret<<s1td::endl;
+    handle.FlushReceiver();
     return ret;
 }
 
 int lx16driver::ServoVoltageRead(int id)
 {
     handle.FlushReceiver();
-
     int ret;
     char buf[16];
-
     buf[0] = buf[1] = LOBOT_SERVO_FRAME_HEADER;
     buf[2] = id;
     buf[3] = 3;
@@ -182,14 +172,11 @@ int lx16driver::ServoVoltageRead(int id)
     handle.Write(buf,6);
     if(m_loopbackFix)
     {//next line fix echo
-       // std::cout<<std::endl<<"processing loopback fix"<<std::endl;
         handle.Read(buf,6,100);
-
         // Read a string from the serial device
         ret=handle.Read(buf,16,100);
-
         if((buf[0]!=LOBOT_SERVO_FRAME_HEADER) || (buf[1]!=LOBOT_SERVO_FRAME_HEADER)){
-             std::cout<<std::endl<<"found anomaly, trying to avoid"<<std::endl;
+            std::cout<<std::endl<<"found anomaly, trying to avoid"<<std::endl;
             for(size_t i=1;i<5;++i)
             {
                 if((buf[i]==LOBOT_SERVO_FRAME_HEADER) && (buf[i+1]==LOBOT_SERVO_FRAME_HEADER))

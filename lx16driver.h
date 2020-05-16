@@ -9,28 +9,10 @@ public:
     lx16driver(const char*, bool);
     ~lx16driver();
     bool isOperational();
-
     void RevriteId(int id);
-
-  //  void ServoMoveStop(int id);
-  //  void ServoMoveStart(int id);
-
     void ServoMoveTimeWrite(int id, int angle, int moveTime);
-//    void ServoMoveTimeWriteWait(int id, int angle, int moveTime);
-
- //   void ServoAngleLimitWrite(int id, int minAngle, int maxAngle);
- //   void ServoAngleLimitRead(int id, int& minAngle, int& maxAngle);
-
-//    void ServoVoltageLimitWrite(int id, int minVoltage, int maxVoltage);
-//    void ServoVoltageLimitRead(int id, int& minVoltage, int& maxVoltage);
-
     int ServoPositionRead(int id);
     int ServoVoltageRead(int id);
- //   int ServoTemperatureRead(int id);
-
- //   int ServoLedWrite(int id, int state);
-
-
     int ServoAdjustAngleGet(int id);
     void ServoAdjustAngleSet(int id, char angle);
     void ServoAdjustAngleSave(int id);
@@ -44,4 +26,14 @@ private:
     bool operational;
 };
 
+
+//    void ServoMoveTimeWriteWait(int id, int angle, int moveTime);
+//   int ServoTemperatureRead(int id);
+//  void ServoMoveStop(int id);
+//  void ServoMoveStart(int id);
+//   int ServoLedWrite(int id, int state);
+//   void ServoAngleLimitWrite(int id, int minAngle, int maxAngle);
+//   void ServoAngleLimitRead(int id, int& minAngle, int& maxAngle);
+//    void ServoVoltageLimitWrite(int id, int minVoltage, int maxVoltage);
+//    void ServoVoltageLimitRead(int id, int& minVoltage, int& maxVoltage);
 #endif // LX16DRIVER_H
