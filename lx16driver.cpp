@@ -1,6 +1,8 @@
 #include "lx16driver.h"
 #include <iostream>
 #include <stdint.h>
+#include <vector>
+
 #define GET_LOW_BYTE(A) (uint8_t)((A))
 //Macro function  get lower 8 bits of A
 #define GET_HIGH_BYTE(A) (uint8_t)((A) >> 8)
@@ -38,239 +40,217 @@
 #define LOBOT_SERVO_LED_ERROR_WRITE      35
 #define LOBOT_SERVO_LED_ERROR_READ       36
 
-
-
-lx16driver::lx16driver(const char* device, bool loopFix)
-    : operational(false)
-    , m_loopbackFix(loopFix)
+struct CommandData
 {
-    int Ret = handle.Open(device,115200);
-    if (Ret!=1) {
-        std::cout<<"Opening serial port "<<device<<" at 115200 "<<std::endl;
-        std::cerr<<"ERROR: Comport not availabe!"<<std::endl;
+    char commandId;
+    char packetSize;
+};
+
+std::vector<CommandData> packetsInfo = {
+    {LOBOT_SERVO_MOVE_TIME_WRITE, 7},
+    {LOBOT_SERVO_MOVE_TIME_READ, 3},
+    {LOBOT_SERVO_MOVE_TIME_WAIT_WRITE, 7},
+    {LOBOT_SERVO_MOVE_TIME_WAIT_READ, 3},
+    {LOBOT_SERVO_MOVE_START, 3},
+    {LOBOT_SERVO_MOVE_STOP, 3},
+    {LOBOT_SERVO_ID_WRITE, 4},
+    {LOBOT_SERVO_ID_READ, 3},
+    {LOBOT_SERVO_ANGLE_OFFSET_ADJUST, 4},
+    {LOBOT_SERVO_ANGLE_OFFSET_WRITE, 3},
+    {LOBOT_SERVO_ANGLE_OFFSET_READ, 3},
+    {LOBOT_SERVO_ANGLE_LIMIT_WRITE, 7},
+    {LOBOT_SERVO_ANGLE_LIMIT_READ, 3},
+    {LOBOT_SERVO_VIN_LIMIT_WRITE, 7},
+    {LOBOT_SERVO_VIN_LIMIT_READ, 3},
+    {LOBOT_SERVO_TEMP_MAX_LIMIT_WRITE, 4},
+    {LOBOT_SERVO_TEMP_MAX_LIMIT_READ, 3},
+    {LOBOT_SERVO_TEMP_READ, 3},
+    {LOBOT_SERVO_VIN_READ, 3},
+    {LOBOT_SERVO_POS_READ, 3},
+    {LOBOT_SERVO_OR_MOTOR_MODE_WRITE, 7},
+    {LOBOT_SERVO_OR_MOTOR_MODE_READ, 3},
+    {LOBOT_SERVO_LOAD_OR_UNLOAD_WRITE, 4},
+    {LOBOT_SERVO_LOAD_OR_UNLOAD_READ, 3},
+    {LOBOT_SERVO_LED_CTRL_WRITE, 4},
+    {LOBOT_SERVO_LED_CTRL_READ, 3},
+    {LOBOT_SERVO_LED_ERROR_WRITE, 4},
+    {LOBOT_SERVO_LED_ERROR_READ, 3},
+};
+
+lx16driver::lx16driver(const char *device, bool loopFix)
+    : m_operational(false), m_loopbackFix(loopFix)
+{
+    int Ret = m_handle.Open(device, 115200);
+    if (Ret != 1)
+    {
+        std::cout << "Opening serial port " << device << " at 115200 " << std::endl;
+        std::cerr << "ERROR: Comport not availabe!" << std::endl;
         return;
     }
-    operational = true;
-    handle.FlushReceiver();
+    m_operational = true;
+    m_handle.FlushReceiver();
 }
 
 lx16driver::~lx16driver()
 {
-    handle.Close();
+    m_handle.Close();
 }
 
 bool lx16driver::isOperational()
 {
-    return operational;
+    return m_operational;
 }
 
 void lx16driver::RevriteId(int id)
 {
-    char buf[10];
-    buf[0] = buf[1] = LOBOT_SERVO_FRAME_HEADER;
-    buf[2] = 254;//old id
-    buf[3] = 4;
-    buf[4] = LOBOT_SERVO_ID_WRITE;
-    buf[5] = id;//new id
-    buf[6] = LobotCheckSum(buf);
-    handle.Write(buf,7);
-    if(m_loopbackFix)
-    {
-        handle.Read(buf,7,100);
-    }
+    MakePacket(LOBOT_SERVO_ID_WRITE, 254);
+    m_buf[5] = id; // new id
+    set8bitParam(id, 0);
+    sendPacket();
+}
+
+int lx16driver::ReadId(void)
+{
+    return 0;
 }
 
 void lx16driver::ServoMoveTimeWrite(int id, int position, int time)
 {
-    char buf[10];
-    if(position < 0)
-        position = 0;
-    if(position > 1000)
-        position = 1000;
-    buf[0] = buf[1] = LOBOT_SERVO_FRAME_HEADER;
-    buf[2] = id;
-    buf[3] = 7;
-    buf[4] = LOBOT_SERVO_MOVE_TIME_WRITE;
-    buf[5] = GET_LOW_BYTE(position);
-    buf[6] = GET_HIGH_BYTE(position);
-    buf[7] = GET_LOW_BYTE(time);
-    buf[8] = GET_HIGH_BYTE(time);
-    buf[9] = LobotCheckSum(buf);
-    handle.Write(buf,10);
-    if(m_loopbackFix)
-    {
-        handle.Read(buf,10,10);
-    }
+    position = std::clamp(position, 0, 1000);
+
+    MakePacket(LOBOT_SERVO_MOVE_TIME_WRITE, id);
+    set16bitParam(position, 0);
+    set16bitParam(time, 1);
+    sendPacket();
 }
 
 int lx16driver::ServoPositionRead(int id)
 {
-    handle.FlushReceiver();
-    uint16_t ret;
-    char buf[16];
-    buf[0] = buf[1] = LOBOT_SERVO_FRAME_HEADER;
-    buf[2] = id;
-    buf[3] = 3;
-    buf[4] = LOBOT_SERVO_POS_READ;
-    buf[5] = LobotCheckSum(buf);
-    handle.Write(buf,6);
-    if(m_loopbackFix)
-    {//next line fix echo
-        handle.Read(buf,6,10);
-    }
-    // Read a string from the serial device
-    ret=handle.Read(buf,16,10);
-
-    if((buf[0]!=LOBOT_SERVO_FRAME_HEADER) || (buf[1]!=LOBOT_SERVO_FRAME_HEADER)){
-        for(size_t i=1;i<5;++i)
-        {
-            if((buf[i]==LOBOT_SERVO_FRAME_HEADER) && (buf[i+1]==LOBOT_SERVO_FRAME_HEADER))
-            {
-                memcpy(&buf[0],&buf[i],16-i);
-                break;
-            }
-        }
-    }
-    
-    // Read a maximum of 128 characters with a timeout of 5 seconds
-    char crc = LobotCheckSum(buf);                                                                        // The final character of the string must be a line feed ('\n')
-    if(buf[3]!=5 || buf[4]!=28)
-    {
-        std::cerr<<"Comminication error!"<<std::endl;
-        for (int i=0;i<16;++i)
-        {
-            std::cout<<"buf["<<i<<"] = "<<std::dec<<(int)buf[i]<<" , "<<std::hex<<(int)buf[i]<<std::endl;
-        }
-
-    }
-    if(crc != buf[7])
-    {
-        std::cerr<<"CRC error"<<std::endl;
-        for (int i=0;i<16;++i)
-        {
-            std::cout<<"buf["<<i<<"] = "<<std::dec<<(int)buf[i]<<" , "<<std::hex<<(int)buf[i]<<std::endl;
-        }
-        return 0;
-    }
-    // Close the connection with the device
-    ret = BYTE_TO_HW(buf[6], buf[5]);
-    handle.FlushReceiver();
-    return ret;
+    MakePacket(LOBOT_SERVO_POS_READ, id);
+    sendPacket();
+    return readAnswer16bit();
 }
 
 int lx16driver::ServoVoltageRead(int id)
 {
-    handle.FlushReceiver();
-    int ret;
-    char buf[16];
-    buf[0] = buf[1] = LOBOT_SERVO_FRAME_HEADER;
-    buf[2] = id;
-    buf[3] = 3;
-    buf[4] = LOBOT_SERVO_VIN_READ;
-    buf[5] = LobotCheckSum(buf);
-
-    handle.Write(buf,6);
-    if(m_loopbackFix)
-    {//next line fix echo
-        handle.Read(buf,6,100);
-        // Read a string from the serial device
-        ret=handle.Read(buf,16,100);
-        if((buf[0]!=LOBOT_SERVO_FRAME_HEADER) || (buf[1]!=LOBOT_SERVO_FRAME_HEADER)){
-            std::cout<<std::endl<<"found anomaly, trying to avoid"<<std::endl;
-            for(size_t i=1;i<5;++i)
-            {
-                if((buf[i]==LOBOT_SERVO_FRAME_HEADER) && (buf[i+1]==LOBOT_SERVO_FRAME_HEADER))
-                {
-                    memcpy(&buf[0],&buf[i],16-i);
-                    std::cout<<std::endl<<"avoided"<<std::endl;
-                    break;
-                }
-            }
-        }
-    }
-
-    // Read a string from the serial device
-    ret=handle.Read(buf,16,100);                                // Read a maximum of 128 characters with a timeout of 5 seconds
-    char crc = LobotCheckSum(buf);                                                                        // The final character of the string must be a line feed ('\n')
-    if(buf[3]!=5 || buf[4]!=LOBOT_SERVO_VIN_READ)
-    {
-        std::cerr<<"Comminication error!"<<std::endl;
-        return 0;
-    }
-    if(crc != buf[7])
-    {
-        std::cerr<<"CRC error"<<std::endl;
-        return 0;
-    }
-    // Close the connection with the device
-    ret = BYTE_TO_HW(buf[6], buf[5]);
-    return ret;
+    MakePacket(LOBOT_SERVO_VIN_READ, id);
+    sendPacket();
+    return readAnswer16bit();
 }
 
 int lx16driver::ServoAdjustAngleGet(int id)
 {
-    int ret;
-    char buf[16];
-    buf[0] = buf[1] = LOBOT_SERVO_FRAME_HEADER;
-    buf[2] = id;
-    buf[3] = 3;
-    buf[4] = LOBOT_SERVO_ANGLE_OFFSET_READ;
-    buf[5] = LobotCheckSum(buf);
-    handle.Write(buf,6);
-    handle.FlushReceiver();
-    if(m_loopbackFix)//next line fix echo
-        handle.ReadString(buf,0,6,100);
-    for(int i=0;i<16;++i) buf[i]=-5;
-    // Read a string from the serial device
-    ret=handle.ReadString(buf,'\n',16,100);                                // Read a maximum of 128 characters with a timeout of 5 seconds
-    char crc = LobotCheckSum(buf);                                                                        // The final character of the string must be a line feed ('\n')
-    if(buf[3]!=4 || buf[4]!=LOBOT_SERVO_ANGLE_OFFSET_READ)
-    {
-        std::cerr<<"Comminication error!"<<std::endl;
-        return 0;
-    }
-    if(crc != buf[6])
-    {
-        std::cerr<<"CRC error"<<std::endl;
-        return 0;
-    }
-    // Close the connection with the device
-    ret = (int8_t)( buf[5]);
-    return ret;
+    MakePacket(LOBOT_SERVO_ANGLE_OFFSET_READ, id);
+    sendPacket();
+    return readAnswer16bit();
 }
 
 void lx16driver::ServoAdjustAngleSave(int id)
 {
-    char buf[10];
-    buf[0] = buf[1] = LOBOT_SERVO_FRAME_HEADER;
-    buf[2] = id;
-    buf[3] = 4;
-    buf[4] = LOBOT_SERVO_ANGLE_OFFSET_WRITE;
-    buf[5] = LobotCheckSum(buf);
-    handle.Write(buf, 6);
+    MakePacket(LOBOT_SERVO_ANGLE_OFFSET_WRITE, id);
+    sendPacket();
 }
 
 void lx16driver::ServoAdjustAngleSet(int id, char angle)
 {
-    char buf[10];
-    buf[0] = buf[1] = LOBOT_SERVO_FRAME_HEADER;
-    buf[2] = id;
-    buf[3] = 4;
-    buf[4] = LOBOT_SERVO_ANGLE_OFFSET_ADJUST;
-    buf[5] = (unsigned char)(angle);
-    buf[6] = LobotCheckSum(buf);
-    handle.Write(buf, 7);
+
+    MakePacket(LOBOT_SERVO_ANGLE_OFFSET_ADJUST, id);
+    set8bitParam(angle, 0);
+    sendPacket();
 }
 
-char lx16driver::LobotCheckSum(char buf[])
+char lx16driver::LobotCheckSum()
 {
     char i;
     uint16_t temp = 0;
-    for (i = 2; i < buf[3] + 2; i++) {
-        temp += buf[i];
+    for (i = 2; i < m_buf[3] + 2; i++) {
+        temp += m_buf[i];
     }
     temp = ~temp;
     i = (char)temp;
     return i;
 }
 
+void lx16driver::MakePacket(char command,int servoId)
+{  
+    m_buf[0] = m_buf[1] = LOBOT_SERVO_FRAME_HEADER;
+    m_buf[2] = servoId;
+    m_buf[3] = GetPacketSize(command);
+    m_buf[4] = LOBOT_SERVO_ANGLE_OFFSET_ADJUST;
+}
+
+char lx16driver::GetPacketSize(char command)
+{
+    int requestSize = -1;
+    for (const CommandData &cd : packetsInfo)
+    {
+        if (cd.commandId == command)
+        {
+            requestSize = cd.packetSize;
+            break;
+        }
+    }
+    if (requestSize == -1)
+        std::throw("invalid packet id");
+    return requestSize;
+}
+
+void lx16driver::sendPacket()
+{
+    m_handle.FlushReceiver();
+    int size=m_buf[3] +2;
+    m_buf[size-1] = LobotCheckSum();
+    m_handle.Write(m_buf,size);
+    if(m_loopbackFix)
+    {
+        m_handle.Read(buf,size,32);
+    }
+}
+
+void lx16driver::set8bitParam(char data, int idx)
+{
+     m_buf[5+idx] = data;
+}
+
+void lx16driver::set16bitParam(int data, int idx)
+{
+    buf[5+idx*2] = GET_LOW_BYTE(data);
+    buf[6+idx*2] = GET_HIGH_BYTE(data);
+}
+
+char lx16driver::readAnswer8bit()
+{
+    //TODO
+    return 0;
+}
+
+int lx16driver::readAnswer16bit()
+{
+    m_handle.Read(m_RxBuf,16,10);
+
+    if((m_RxBuf[0]!=LOBOT_SERVO_FRAME_HEADER) || (m_RxBuf[1]!=LOBOT_SERVO_FRAME_HEADER)){
+        for(size_t i=1;i<5;++i)
+        {
+            if((m_RxBuf[i]==LOBOT_SERVO_FRAME_HEADER) && (m_RxBuf[i+1]==LOBOT_SERVO_FRAME_HEADER))
+            {
+                memcpy(&m_RxBuf[0],&m_RxBuf[i],16-i);
+                break;
+            }
+        }
+    }
+
+    char crc = LobotCheckSum(m_RxBuf); 
+    if(m_RxBuf[3]!=m_buf[3] || m_RxBuf[4]!=m_buf[4] ) //compare command id
+    {
+        std::cerr<<"Comminication error!"<<std::endl;
+        return 0;
+    }
+    if(crc != m_RxBuf[7])
+    {
+        std::cerr<<"CRC error"<<std::endl;
+        return 0;
+    }
+    // Close the connection with the device
+    ret = BYTE_TO_HW(m_RxBuf[6], m_RxBuf[5]);
+    return ret;
+}
