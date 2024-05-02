@@ -1,6 +1,6 @@
-project(lx16)
-cmake_minimum_required(VERSION 2.8)
+project(lx16lib)
 
 aux_source_directory(. LX16_SRC_LIST)
 
-add_library(lx16 ${LX16_SRC_LIST})
+add_library(lx16lib STATIC ${LX16_SRC_LIST})
+

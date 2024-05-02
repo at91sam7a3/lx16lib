@@ -2,6 +2,8 @@
 #include <iostream>
 #include <stdint.h>
 #include <vector>
+#include <algorithm>
+#include <exception>
 
 #define GET_LOW_BYTE(A) (uint8_t)((A))
 //Macro function  get lower 8 bits of A
@@ -191,7 +193,7 @@ char lx16driver::GetPacketSize(char command)
         }
     }
     if (requestSize == -1)
-        std::throw("invalid packet id");
+        throw(std::runtime_error("invalid packet id"));
     return requestSize;
 }
 
@@ -203,7 +205,7 @@ void lx16driver::sendPacket()
     m_handle.Write(m_buf,size);
     if(m_loopbackFix)
     {
-        m_handle.Read(buf,size,32);
+        m_handle.Read(m_buf,size,32);
     }
 }
 
@@ -214,8 +216,8 @@ void lx16driver::set8bitParam(char data, int idx)
 
 void lx16driver::set16bitParam(int data, int idx)
 {
-    buf[5+idx*2] = GET_LOW_BYTE(data);
-    buf[6+idx*2] = GET_HIGH_BYTE(data);
+    m_buf[5+idx*2] = GET_LOW_BYTE(data);
+    m_buf[6+idx*2] = GET_HIGH_BYTE(data);
 }
 
 char lx16driver::readAnswer8bit()
@@ -239,7 +241,7 @@ int lx16driver::readAnswer16bit()
         }
     }
 
-    char crc = LobotCheckSum(m_RxBuf); 
+    char crc = LobotCheckSum(); 
     if(m_RxBuf[3]!=m_buf[3] || m_RxBuf[4]!=m_buf[4] ) //compare command id
     {
         std::cerr<<"Comminication error!"<<std::endl;
@@ -251,6 +253,5 @@ int lx16driver::readAnswer16bit()
         return 0;
     }
     // Close the connection with the device
-    ret = BYTE_TO_HW(m_RxBuf[6], m_RxBuf[5]);
-    return ret;
+    return BYTE_TO_HW(m_RxBuf[6], m_RxBuf[5]);
 }

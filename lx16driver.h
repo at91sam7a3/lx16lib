@@ -27,7 +27,7 @@ public:
     int ServoAdjustAngleGet(int id);
 
 private:
-    char LobotCheckSum(char buf[]);
+    char LobotCheckSum();
     void MakePacket(char command, int servoId);
     char GetPacketSize(char command);
     void sendPacket();
