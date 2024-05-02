@@ -12,6 +12,8 @@
 #define BYTE_TO_HW(A, B) ((((uint16_t)(A)) << 8) | (uint8_t)(B))
 //Macro Function  put A as higher 8 bits   B as lower 8 bits   which amalgamated into 16 bits integer
 
+#define LOGS
+
 #define LOBOT_SERVO_FRAME_HEADER         0x55
 #define LOBOT_SERVO_MOVE_TIME_WRITE      1
 #define LOBOT_SERVO_MOVE_TIME_READ       2
@@ -118,8 +120,6 @@ int lx16driver::ReadId(void)
 
 void lx16driver::ServoMoveTimeWrite(int id, int position, int time)
 {
-    position = std::clamp(position, 0, 1000);
-
     MakePacket(LOBOT_SERVO_MOVE_TIME_WRITE, id);
     set16bitParam(position, 0);
     set16bitParam(time, 1);
@@ -161,12 +161,12 @@ void lx16driver::ServoAdjustAngleSet(int id, char angle)
     sendPacket();
 }
 
-char lx16driver::LobotCheckSum()
+char lx16driver::LobotCheckSum(const char * buf)
 {
     char i;
     uint16_t temp = 0;
-    for (i = 2; i < m_buf[3] + 2; i++) {
-        temp += m_buf[i];
+    for (i = 2; i < buf[3] + 2; i++) {
+        temp += buf[i];
     }
     temp = ~temp;
     i = (char)temp;
@@ -201,7 +201,14 @@ void lx16driver::sendPacket()
 {
     m_handle.FlushReceiver();
     int size=m_buf[3] +2;
-    m_buf[size-1] = LobotCheckSum();
+    m_buf[size-1] = LobotCheckSum(m_buf);
+#ifdef LOGS
+    std::cout<<"Sending packet: " << std::dec<<size<<" bytes";
+    for(int i = 0; i < size;++i)
+    {
+        std::cout<<" 0x"<<std::hex<<m_buf[i]<<std::dec;
+    }
+#endif
     m_handle.Write(m_buf,size);
     if(m_loopbackFix)
     {
@@ -228,7 +235,16 @@ char lx16driver::readAnswer8bit()
 
 int lx16driver::readAnswer16bit()
 {
-    m_handle.Read(m_RxBuf,16,10);
+    int size = m_handle.Read(m_RxBuf,16,10);
+
+  #ifdef LOGS
+    std::cout<<"reading packet: " << std::dec<<size<<" bytes";
+    for(int i = 0; i < size;++i)
+    {
+        std::cout<<" 0x"<<std::hex<<m_buf[i]<<std::dec;
+    }
+#endif
+
 
     if((m_RxBuf[0]!=LOBOT_SERVO_FRAME_HEADER) || (m_RxBuf[1]!=LOBOT_SERVO_FRAME_HEADER)){
         for(size_t i=1;i<5;++i)
@@ -241,7 +257,7 @@ int lx16driver::readAnswer16bit()
         }
     }
 
-    char crc = LobotCheckSum(); 
+    char crc = LobotCheckSum(m_RxBuf); 
     if(m_RxBuf[3]!=m_buf[3] || m_RxBuf[4]!=m_buf[4] ) //compare command id
     {
         std::cerr<<"Comminication error!"<<std::endl;
