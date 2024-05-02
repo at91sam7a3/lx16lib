@@ -108,7 +108,6 @@ bool lx16driver::isOperational()
 void lx16driver::RevriteId(int id)
 {
     MakePacket(LOBOT_SERVO_ID_WRITE, 254);
-    m_buf[5] = id; // new id
     set8bitParam(id, 0);
     sendPacket();
 }
