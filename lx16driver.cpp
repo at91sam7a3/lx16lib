@@ -201,6 +201,7 @@ void lx16driver::sendPacket()
     m_handle.FlushReceiver();
     int size=m_buf[3] +2;
     m_buf[size-1] = LobotCheckSum(m_buf);
+    std::cout<<"write crc to pos "<<(size-1)<<std::endl;
 #ifdef LOGS
     std::cout<<"Sending packet: " << std::dec<<size<<" bytes";
     for(int i = 0; i < size;++i)
@@ -208,6 +209,7 @@ void lx16driver::sendPacket()
         std::cout<<" 0x"<<std::hex<<(int)m_buf[i]<<"("<<std::dec<<(int)m_buf[i]<<")";
     }
 #endif
+std::cout<<"write total bites:"<<std::endl;
     m_handle.Write(m_buf,size);
     if(m_loopbackFix)
     {
@@ -218,6 +220,7 @@ void lx16driver::sendPacket()
 void lx16driver::set8bitParam(char data, int idx)
 {
      m_buf[5+idx] = data;
+     std::cout<<"Writing param "<<data<< " to pos="<<(idx+5);
 }
 
 void lx16driver::set16bitParam(int data, int idx)
