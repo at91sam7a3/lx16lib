@@ -199,7 +199,7 @@ char lx16driver::GetPacketSize(char command)
 void lx16driver::sendPacket()
 {
     m_handle.FlushReceiver();
-    int size=m_buf[3] +2;
+    int size=m_buf[3] +3;
     m_buf[size-1] = LobotCheckSum(m_buf);
     std::cout<<"write crc to pos "<<(size-1)<<std::endl;
 #ifdef LOGS
