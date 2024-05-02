@@ -178,7 +178,7 @@ void lx16driver::MakePacket(char command,int servoId)
     m_buf[0] = m_buf[1] = LOBOT_SERVO_FRAME_HEADER;
     m_buf[2] = servoId;
     m_buf[3] = GetPacketSize(command);
-    m_buf[4] = LOBOT_SERVO_ANGLE_OFFSET_ADJUST;
+    m_buf[4] = command;
 }
 
 char lx16driver::GetPacketSize(char command)
@@ -206,7 +206,7 @@ void lx16driver::sendPacket()
     std::cout<<"Sending packet: " << std::dec<<size<<" bytes";
     for(int i = 0; i < size;++i)
     {
-        std::cout<<" 0x"<<std::hex<<m_buf[i]<<std::dec;
+        std::cout<<" 0x"<<std::hex<<(int)m_buf[i]<<"("<<std::dec<<(int)m_buf[i]<<")";
     }
 #endif
     m_handle.Write(m_buf,size);
@@ -241,7 +241,7 @@ int lx16driver::readAnswer16bit()
     std::cout<<"reading packet: " << std::dec<<size<<" bytes";
     for(int i = 0; i < size;++i)
     {
-        std::cout<<" 0x"<<std::hex<<m_buf[i]<<std::dec;
+        std::cout<<" 0x"<<std::hex<<(int)m_RxBuf[i]<<"("<<std::dec<<(int)m_RxBuf[i]<<")";
     }
 #endif
 
