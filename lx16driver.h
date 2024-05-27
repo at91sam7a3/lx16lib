@@ -25,16 +25,20 @@ public:
     int ServoPositionRead(int id);
     int ServoVoltageRead(int id);
     int ServoAdjustAngleGet(int id);
+    void SetAngleLimits(int id, int min, int max);
+    std::pair<int,int> GetAngleLimits(int id);
+    
 
 private:
     char LobotCheckSum(const char * buf);
-    void MakePacket(char command, int servoId);
+    void MakePacket(const char command,const int servoId);
     char GetPacketSize(char command);
     void sendPacket();
     void set8bitParam(char data, int idx);
     void set16bitParam(int data, int idx);
     char readAnswer8bit();
     int readAnswer16bit();
+    std::pair<int,int> readAnswerPair16bit();
 
 private:
     bool m_loopbackFix;

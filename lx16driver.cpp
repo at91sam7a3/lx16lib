@@ -146,6 +146,20 @@ int lx16driver::ServoAdjustAngleGet(int id)
     return readAnswer16bit();
 }
 
+void lx16driver::SetAngleLimits(int id, int min, int max) {
+    MakePacket(LOBOT_SERVO_ANGLE_LIMIT_WRITE, id);
+    set16bitParam(min, 0);
+    set16bitParam(max, 1);
+    sendPacket();
+}
+
+std::pair<int, int> lx16driver::GetAngleLimits(int id)
+{
+    MakePacket(LOBOT_SERVO_ANGLE_LIMIT_READ, id);
+    sendPacket();
+    return readAnswerPair16bit();    
+}
+
 void lx16driver::ServoAdjustAngleSave(int id)
 {
     MakePacket(LOBOT_SERVO_ANGLE_OFFSET_WRITE, id);
@@ -172,7 +186,7 @@ char lx16driver::LobotCheckSum(const char * buf)
     return i;
 }
 
-void lx16driver::MakePacket(char command,int servoId)
+void lx16driver::MakePacket(const char command, const int servoId)
 {  
     m_buf[0] = m_buf[1] = LOBOT_SERVO_FRAME_HEADER;
     m_buf[2] = servoId;
@@ -237,7 +251,7 @@ char lx16driver::readAnswer8bit()
 
 int lx16driver::readAnswer16bit()
 {
-    int size = m_handle.Read(m_RxBuf,16,10);
+    const int size = m_handle.Read(m_RxBuf,16,10);
 
   #ifdef LOGS
     std::cout<<"reading packet: " << std::dec<<size<<" bytes";
@@ -259,7 +273,7 @@ int lx16driver::readAnswer16bit()
         }
     }
 
-    char crc = LobotCheckSum(m_RxBuf); 
+    const char crc = LobotCheckSum(m_RxBuf); 
     if(m_RxBuf[3]!=m_buf[3] || m_RxBuf[4]!=m_buf[4] ) //compare command id
     {
         std::cerr<<"Comminication error!"<<std::endl;
@@ -272,4 +286,45 @@ int lx16driver::readAnswer16bit()
     }
     // Close the connection with the device
     return BYTE_TO_HW(m_RxBuf[6], m_RxBuf[5]);
+}
+
+std::pair<int, int> lx16driver::readAnswerPair16bit()
+{
+    const int size = m_handle.Read(m_RxBuf,16,10);
+
+  #ifdef LOGS
+    std::cout<<"reading packet: " << std::dec<<size<<" bytes";
+    for(int i = 0; i < size;++i)
+    {
+        std::cout<<" 0x"<<std::hex<<(int)m_RxBuf[i]<<"("<<std::dec<<(int)m_RxBuf[i]<<")";
+    }
+#endif
+
+
+    if((m_RxBuf[0]!=LOBOT_SERVO_FRAME_HEADER) || (m_RxBuf[1]!=LOBOT_SERVO_FRAME_HEADER)){
+        for(size_t i=1;i<5;++i)
+        {
+            if((m_RxBuf[i]==LOBOT_SERVO_FRAME_HEADER) && (m_RxBuf[i+1]==LOBOT_SERVO_FRAME_HEADER))
+            {
+                memcpy(&m_RxBuf[0],&m_RxBuf[i],16-i);
+                break;
+            }
+        }
+    }
+
+    const char crc = LobotCheckSum(m_RxBuf); 
+    if(m_RxBuf[3]!=m_buf[3] || m_RxBuf[4]!=m_buf[4] ) //compare command id
+    {
+        std::cerr<<"Comminication error!"<<std::endl;
+        return 0;
+    }
+    if(crc != m_RxBuf[9])
+    {
+        std::cerr<<"CRC error"<<std::endl;
+        return 0;
+    }
+    // Close the connection with the device
+    const int min = BYTE_TO_HW(m_RxBuf[6], m_RxBuf[5]);
+    const int max = BYTE_TO_HW(m_RxBuf[8], m_RxBuf[7]);
+    return std::pair<int,int>(min,max);
 }
