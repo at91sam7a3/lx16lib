@@ -112,11 +112,6 @@ void lx16driver::RevriteId(int id)
     sendPacket();
 }
 
-int lx16driver::ReadId(void)
-{
-    return 0;
-}
-
 void lx16driver::ServoMoveTimeWrite(int id, int position, int time)
 {
     MakePacket(LOBOT_SERVO_MOVE_TIME_WRITE, id);
