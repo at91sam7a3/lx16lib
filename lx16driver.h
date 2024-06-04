@@ -26,6 +26,7 @@ public:
     int ServoVoltageRead(int id);
     int ServoAdjustAngleGet(int id);
     void SetAngleLimits(int id, int min, int max);
+    char GetServoErrorStatus(int id);
     std::pair<int,int> GetAngleLimits(int id);
     
 
@@ -37,7 +38,8 @@ private:
     void set8bitParam(char data, int idx);
     void set16bitParam(int data, int idx);
     char readAnswer8bit();
-    int readAnswer16bit();
+    int readAnswerBase();
+    int readAnswer();
     std::pair<int,int> readAnswerPair16bit();
 
 private:
