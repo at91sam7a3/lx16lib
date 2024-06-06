@@ -3,8 +3,6 @@
 
 /*This class provides interface to work with Lewansoul LX-16A servos*/
 
-
-
 class lx16driver
 {
 public:
@@ -24,6 +22,7 @@ public:
     void RevriteId(int id);
     void ServoMoveTimeWrite(int id, int angle, int moveTime);
     void ServoAdjustAngleSet(int id, char angle);
+    ///
     void ServoAdjustAngleSave(int id);
     /// @brief Reads servo current angle
     /// @param id 
