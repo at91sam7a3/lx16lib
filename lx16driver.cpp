@@ -12,8 +12,6 @@
 #define BYTE_TO_HW(A, B) ((((uint16_t)(A)) << 8) | (uint8_t)(B))
 // Macro Function  put A as higher 8 bits   B as lower 8 bits   which amalgamated into 16 bits integer
 
-#define LOGS
-
 #define LOBOT_SERVO_FRAME_HEADER 0x55
 #define LOBOT_SERVO_MOVE_TIME_WRITE 1
 #define LOBOT_SERVO_MOVE_TIME_READ 2
@@ -82,7 +80,9 @@ std::vector<CommandData> packetsInfo = {
 };
 
 lx16driver::lx16driver(const char *device, bool loopFix)
-    : m_operational(false), m_loopbackFix(loopFix)
+    : m_operational(false)
+    , m_loopbackFix(loopFix)
+    , m_logsEnabled(false)
 {
     int Ret = m_handle.Open(device, 115200);
     if (Ret != 1)
@@ -164,6 +164,8 @@ std::pair<int, int> lx16driver::GetAngleLimits(int id)
     return readAnswerPair8bit();
 }
 
+void lx16driver::setDebugLogs(bool enable) {}
+
 void lx16driver::ServoAdjustAngleSave(int id)
 {
     MakePacket(LOBOT_SERVO_ANGLE_OFFSET_WRITE, id);
@@ -220,15 +222,16 @@ void lx16driver::sendPacket()
     m_handle.FlushReceiver();
     int size = m_buf[3] + 3;
     m_buf[size - 1] = LobotCheckSum(m_buf);
-    std::cout << "write crc to pos " << (size - 1) << std::endl;
-#ifdef LOGS
-    std::cout << "Sending packet: " << std::dec << size << " bytes";
-    for (int i = 0; i < size; ++i)
+    if(m_logsEnabled)
     {
-        std::cout << " 0x" << std::hex << (int)m_buf[i] << "(" << std::dec << (int)m_buf[i] << ")";
+        std::cout << "write crc to pos " << (size - 1) << std::endl;
+        std::cout << "Sending packet: " << std::dec << size << " bytes";
+        for (int i = 0; i < size; ++i)
+        {
+            std::cout << " 0x" << std::hex << (int)m_buf[i] << "(" << std::dec << (int)m_buf[i] << ")";
+        }
+        std::cout << "write total bites:" << std::endl;
     }
-#endif
-    std::cout << "write total bites:" << std::endl;
     m_handle.Write(m_buf, size);
     if (m_loopbackFix)
     {
@@ -239,7 +242,11 @@ void lx16driver::sendPacket()
 void lx16driver::set8bitParam(char data, int idx)
 {
     m_buf[5 + idx] = data;
-    std::cout << "Writing param " << data << " to pos=" << (idx + 5);
+    if (m_logsEnabled)
+    {
+        std::cout << "Writing param " << data << " to pos=" << (idx + 5);
+    }
+    
 }
 
 void lx16driver::set16bitParam(int data, int idx)
@@ -265,13 +272,14 @@ int lx16driver::readAnswerBase()
         return 0;
     }
     size += 3;
-#ifdef LOGS
-    std::cout << "reading packet: " << std::dec << size << " bytes";
-    for (int i = 0; i < size; ++i)
+    if(m_logsEnabled)
     {
-        std::cout << " 0x" << std::hex << (int)m_RxBuf[i] << "(" << std::dec << (int)m_RxBuf[i] << ")";
+        std::cout << "reading packet: " << std::dec << size << " bytes";
+        for (int i = 0; i < size; ++i)
+        {
+            std::cout << " 0x" << std::hex << (int)m_RxBuf[i] << "(" << std::dec << (int)m_RxBuf[i] << ")";
+        }
     }
-#endif
 
     const char crc = LobotCheckSum(m_RxBuf);
     if (m_RxBuf[2] != m_buf[2]) // compare servo id
@@ -310,7 +318,7 @@ std::pair<int, int> lx16driver::readAnswerPair8bit()
         return {0,0};
     }
     // Close the connection with the device
-    const int min =  m_RxBuf[5];
-    const int max =  m_RxBuf[6];
+    const int min =  reinterpret_cast<signed char>(m_RxBuf[5]);
+    const int max =  reinterpret_cast<signed char>(m_RxBuf[6]);
     return std::pair<int, int>(min, max);
 }

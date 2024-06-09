@@ -36,6 +36,7 @@ public:
     void SetAngleLimits(int id, int min, int max);
     char GetServoErrorStatus(int id);
     std::pair<int,int> GetAngleLimits(int id);
+    void setDebugLogs(bool enable);
     
 private:
     char LobotCheckSum(const char * buf);
@@ -55,5 +56,6 @@ private:
     bool m_operational;
     char m_buf[16];
     char m_RxBuf[100];
+    bool m_logsEnabled;
 };
 
