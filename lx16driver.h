@@ -47,7 +47,7 @@ private:
     char readAnswer8bit();
     int readAnswerBase();
     int readAnswer();
-    std::pair<int,int> readAnswerPair16bit();
+    std::pair<int,int> readAnswerPair8bit();
 
 private:
     bool m_loopbackFix;

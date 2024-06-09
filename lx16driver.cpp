@@ -161,7 +161,7 @@ std::pair<int, int> lx16driver::GetAngleLimits(int id)
 {
     MakePacket(LOBOT_SERVO_ANGLE_LIMIT_READ, id);
     sendPacket();
-    return readAnswerPair16bit();
+    return readAnswerPair8bit();
 }
 
 void lx16driver::ServoAdjustAngleSave(int id)
@@ -302,7 +302,7 @@ int lx16driver::readAnswer()
     return BYTE_TO_HW(m_RxBuf[6], m_RxBuf[5]);
 }
 
-std::pair<int, int> lx16driver::readAnswerPair16bit()
+std::pair<int, int> lx16driver::readAnswerPair8bit()
 {
     const int size = readAnswerBase();
     if(size == 0)
@@ -310,7 +310,7 @@ std::pair<int, int> lx16driver::readAnswerPair16bit()
         return {0,0};
     }
     // Close the connection with the device
-    const int min = BYTE_TO_HW(m_RxBuf[6], m_RxBuf[5]);
-    const int max = BYTE_TO_HW(m_RxBuf[8], m_RxBuf[7]);
+    const int min =  m_RxBuf[5];
+    const int min =  m_RxBuf[6];
     return std::pair<int, int>(min, max);
 }
