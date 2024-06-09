@@ -311,6 +311,6 @@ std::pair<int, int> lx16driver::readAnswerPair8bit()
     }
     // Close the connection with the device
     const int min =  m_RxBuf[5];
-    const int min =  m_RxBuf[6];
+    const int max =  m_RxBuf[6];
     return std::pair<int, int>(min, max);
 }
