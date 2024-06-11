@@ -120,6 +120,14 @@ void lx16driver::ServoMoveTimeWrite(int id, int position, int time)
     sendPacket();
 }
 
+void lx16driver::ServoMoveTimeWriteAndWait(int id, int position, int time) 
+{
+    MakePacket(LOBOT_SERVO_MOVE_TIME_WAIT_WRITE , id);
+    set16bitParam(position, 0);
+    set16bitParam(time, 1);
+    sendPacket();
+}
+
 int lx16driver::ServoPositionRead(int id)
 {
     MakePacket(LOBOT_SERVO_POS_READ, id);
@@ -164,7 +172,10 @@ std::pair<int, int> lx16driver::GetAngleLimits(int id)
     return readAnswerPair8bit();
 }
 
-void lx16driver::setDebugLogs(bool enable) {}
+void lx16driver::setDebugLogs(bool enable) 
+{
+    m_logsEnabled = enable;
+}
 
 void lx16driver::ServoAdjustAngleSave(int id)
 {
@@ -177,6 +188,18 @@ void lx16driver::ServoAdjustAngleSet(int id, char angle)
 
     MakePacket(LOBOT_SERVO_ANGLE_OFFSET_ADJUST, id);
     set8bitParam(angle, 0);
+    sendPacket();
+}
+
+void lx16driver::ServoMoveStart(int id) 
+{
+    MakePacket(LOBOT_SERVO_MOVE_START, id);
+    sendPacket();
+}
+
+void lx16driver::ServoMoveStop(int id) 
+{
+    MakePacket(LOBOT_SERVO_MOVE_STOP, id);
     sendPacket();
 }
 

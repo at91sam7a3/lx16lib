@@ -21,8 +21,10 @@ public:
     /// @param id - new ID to set
     void RevriteId(int id);
     void ServoMoveTimeWrite(int id, int angle, int moveTime);
+    void ServoMoveTimeWriteAndWait(int id, int angle, int moveTime);
     void ServoAdjustAngleSet(int id, char angle);
-    ///
+    void ServoMoveStart(int id);
+    void ServoMoveStop(int id);
     void ServoAdjustAngleSave(int id);
     /// @brief Reads servo current angle
     /// @param id 
