@@ -68,5 +68,7 @@ private:
     char m_buf[16];
     char m_RxBuf[100];
     bool m_logsEnabled;
+    int m_last_id_{0};
+    int m_last_cmd_{0};
 };
 

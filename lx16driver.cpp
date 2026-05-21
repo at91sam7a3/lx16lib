@@ -259,6 +259,11 @@ void lx16driver::sendPacket()
     m_handle.FlushReceiver();
     int size = m_buf[3] + 3;
     m_buf[size - 1] = LobotCheckSum(m_buf);
+
+    // Save before loopback read overwrites m_buf
+    m_last_id_ = m_buf[2];
+    m_last_cmd_ = m_buf[4];
+
     if(m_logsEnabled)
     {
         std::cout << "write crc to pos " << (size - 1) << std::endl;
@@ -334,8 +339,8 @@ static const char* cmd_name(int cmd) {
 
 int lx16driver::readAnswerBase()
 {
-    int expected_id = m_buf[2];
-    int expected_cmd = m_buf[4];
+    int expected_id = m_last_id_;
+    int expected_cmd = m_last_cmd_;
 
     int status1 = m_handle.Read(m_RxBuf, 4, 100);
     int size = m_RxBuf[3];
