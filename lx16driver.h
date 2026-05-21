@@ -38,6 +38,15 @@ public:
     void SetAngleLimits(int id, int min, int max);
     char GetServoErrorStatus(int id);
     std::pair<int,int> GetAngleLimits(int id);
+    /// @brief Enable or disable the servo motor (torque output)
+    /// @param id   - servo id
+    /// @param load - 0 = unloaded (motor powered down, no torque)
+    ///               1 = loaded   (motor powered, torque output enabled)
+    void ServoLoadOrUnloadWrite(int id, int load);
+    /// @brief Read current load/unload state of the servo motor
+    /// @param id - servo id
+    /// @return 0 = unloaded (no torque), 1 = loaded (torque output)
+    int ServoLoadOrUnloadRead(int id);
     void setDebugLogs(bool enable);
     
 private:

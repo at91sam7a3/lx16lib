@@ -203,6 +203,20 @@ void lx16driver::ServoMoveStop(int id)
     sendPacket();
 }
 
+void lx16driver::ServoLoadOrUnloadWrite(int id, int load)
+{
+    MakePacket(LOBOT_SERVO_LOAD_OR_UNLOAD_WRITE, id);
+    set8bitParam(load ? 1 : 0, 0);
+    sendPacket();
+}
+
+int lx16driver::ServoLoadOrUnloadRead(int id)
+{
+    MakePacket(LOBOT_SERVO_LOAD_OR_UNLOAD_READ, id);
+    sendPacket();
+    return readAnswer();
+}
+
 char lx16driver::LobotCheckSum(const char *buf)
 {
     char i;
