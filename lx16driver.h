@@ -1,5 +1,6 @@
 #pragma once
 #include "serialib.h"
+#include <mutex>
 
 /*This class provides interface to work with Lewansoul LX-16A servos*/
 
@@ -62,6 +63,7 @@ private:
     std::pair<int,int> readAnswerPair8bit();
 
 private:
+    std::mutex m_mtx;
     bool m_loopbackFix;
     serialib m_handle;
     bool m_operational;

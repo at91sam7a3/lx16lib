@@ -107,9 +107,122 @@ bool lx16driver::isOperational()
 
 void lx16driver::RevriteId(int id)
 {
+    std::lock_guard<std::mutex> lock(m_mtx);
     MakePacket(LOBOT_SERVO_ID_WRITE, 254);
     set8bitParam(id, 0);
     sendPacket();
+}
+
+void lx16driver::ServoMoveTimeWrite(int id, int position, int time)
+{
+    std::lock_guard<std::mutex> lock(m_mtx);
+    MakePacket(LOBOT_SERVO_MOVE_TIME_WRITE, id);
+    set16bitParam(position, 0);
+    set16bitParam(time, 1);
+    sendPacket();
+}
+
+void lx16driver::ServoMoveTimeWriteAndWait(int id, int position, int time) 
+{
+    std::lock_guard<std::mutex> lock(m_mtx);
+    MakePacket(LOBOT_SERVO_MOVE_TIME_WAIT_WRITE , id);
+    set16bitParam(position, 0);
+    set16bitParam(time, 1);
+    sendPacket();
+}
+
+int lx16driver::ServoPositionRead(int id)
+{
+    std::lock_guard<std::mutex> lock(m_mtx);
+    MakePacket(LOBOT_SERVO_POS_READ, id);
+    sendPacket();
+    return readAnswer();
+}
+
+int lx16driver::ServoVoltageRead(int id)
+{
+    std::lock_guard<std::mutex> lock(m_mtx);
+    MakePacket(LOBOT_SERVO_VIN_READ, id);
+    sendPacket();
+    return readAnswer();
+}
+
+int lx16driver::ServoAdjustAngleGet(int id)
+{
+    std::lock_guard<std::mutex> lock(m_mtx);
+    MakePacket(LOBOT_SERVO_ANGLE_OFFSET_READ, id);
+    sendPacket();
+    return readAnswer();
+}
+
+void lx16driver::SetAngleLimits(int id, int min, int max)
+{
+    std::lock_guard<std::mutex> lock(m_mtx);
+    MakePacket(LOBOT_SERVO_ANGLE_LIMIT_WRITE, id);
+    set16bitParam(min, 0);
+    set16bitParam(max, 1);
+    sendPacket();
+}
+
+char lx16driver::GetServoErrorStatus(int id)
+{
+    std::lock_guard<std::mutex> lock(m_mtx);
+    MakePacket(LOBOT_SERVO_LED_ERROR_READ, id);
+    sendPacket();
+    return readAnswer();
+}
+
+std::pair<int, int> lx16driver::GetAngleLimits(int id)
+{
+    std::lock_guard<std::mutex> lock(m_mtx);
+    MakePacket(LOBOT_SERVO_ANGLE_LIMIT_READ, id);
+    sendPacket();
+    return readAnswerPair8bit();
+}
+
+void lx16driver::ServoAdjustAngleSave(int id)
+{
+    std::lock_guard<std::mutex> lock(m_mtx);
+    MakePacket(LOBOT_SERVO_ANGLE_OFFSET_WRITE, id);
+    sendPacket();
+}
+
+void lx16driver::ServoAdjustAngleSet(int id, char angle)
+{
+    std::lock_guard<std::mutex> lock(m_mtx);
+    MakePacket(LOBOT_SERVO_ANGLE_OFFSET_ADJUST, id);
+    set8bitParam(angle, 0);
+    sendPacket();
+}
+
+void lx16driver::ServoMoveStart(int id) 
+{
+    std::lock_guard<std::mutex> lock(m_mtx);
+    MakePacket(LOBOT_SERVO_MOVE_START, id);
+    sendPacket();
+}
+
+void lx16driver::ServoMoveStop(int id) 
+{
+    std::lock_guard<std::mutex> lock(m_mtx);
+    MakePacket(LOBOT_SERVO_MOVE_STOP, id);
+    sendPacket();
+}
+
+void lx16driver::ServoLoadOrUnloadWrite(int id, int load)
+{
+    std::lock_guard<std::mutex> lock(m_mtx);
+    MakePacket(LOBOT_SERVO_LOAD_OR_UNLOAD_WRITE, id);
+    set8bitParam(load ? 1 : 0, 0);
+    sendPacket();
+}
+
+int lx16driver::ServoLoadOrUnloadRead(int id)
+{
+    std::lock_guard<std::mutex> lock(m_mtx);
+    MakePacket(LOBOT_SERVO_LOAD_OR_UNLOAD_READ, id);
+    sendPacket();
+    return readAnswer();
 }
 
 void lx16driver::ServoMoveTimeWrite(int id, int position, int time)
