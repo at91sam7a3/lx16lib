@@ -298,14 +298,53 @@ char lx16driver::readAnswer8bit()
     return 0;
 }
 
+static const char* cmd_name(int cmd) {
+    switch (cmd) {
+        case 1:  return "MoveTimeWrite";
+        case 2:  return "MoveTimeRead";
+        case 7:  return "MoveTimeWaitWrite";
+        case 8:  return "MoveTimeWaitRead";
+        case 11: return "MoveStart";
+        case 12: return "MoveStop";
+        case 13: return "IdWrite";
+        case 14: return "IdRead";
+        case 17: return "AngleOffsetAdjust";
+        case 18: return "AngleOffsetWrite";
+        case 19: return "AngleOffsetRead";
+        case 20: return "AngleLimitWrite";
+        case 21: return "AngleLimitRead";
+        case 22: return "VinLimitWrite";
+        case 23: return "VinLimitRead";
+        case 24: return "TempMaxLimitWrite";
+        case 25: return "TempMaxLimitRead";
+        case 26: return "TempRead";
+        case 27: return "VinRead";
+        case 28: return "PosRead";
+        case 29: return "OrMotorModeWrite";
+        case 30: return "OrMotorModeRead";
+        case 31: return "LoadOrUnloadWrite";
+        case 32: return "LoadOrUnloadRead";
+        case 33: return "LedCtrlWrite";
+        case 34: return "LedCtrlRead";
+        case 35: return "LedErrorWrite";
+        case 36: return "LedErrorRead";
+        default: return "Unknown";
+    }
+}
+
 int lx16driver::readAnswerBase()
 {
+    int expected_id = m_buf[2];
+    int expected_cmd = m_buf[4];
+
     int status1 = m_handle.Read(m_RxBuf, 4, 100);
     int size = m_RxBuf[3];
     int status2 = m_handle.Read(m_RxBuf + 4, size - 1, 100);
     if (status1 != 1 && status2 != 1)
     {
-        std::cout << "Communication error on getting answer from servo" << std::endl;
+        std::cerr << "[SERVO] Comm error on " << cmd_name(expected_cmd)
+                  << " id=" << (int)expected_id
+                  << " (read1=" << status1 << " read2=" << status2 << ")" << std::endl;
         return 0;
     }
     size += 3;
@@ -321,12 +360,15 @@ int lx16driver::readAnswerBase()
     const char crc = LobotCheckSum(m_RxBuf);
     if (m_RxBuf[2] != m_buf[2]) // compare servo id
     {
-        std::cerr << "Comminication error, answer from wrong servo!" << std::endl;
+        std::cerr << "[SERVO] Wrong answer on " << cmd_name(expected_cmd)
+                  << " id=" << (int)expected_id
+                  << " got servo_id=" << (int)m_RxBuf[2] << std::endl;
         return 0;
     }
     if (crc != m_RxBuf[size - 1])
     {
-        std::cerr << "CRC error" << std::endl;
+        std::cerr << "[SERVO] CRC error on " << cmd_name(expected_cmd)
+                  << " id=" << (int)expected_id << std::endl;
         return 0;
     }
     return size;
