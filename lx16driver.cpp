@@ -187,11 +187,11 @@ void lx16driver::ServoAdjustAngleSave(int id)
     sendPacket();
 }
 
-void lx16driver::ServoAdjustAngleSet(int id, char angle)
+void lx16driver::ServoAdjustAngleSet(int id, char angle_deg)
 {
     std::lock_guard<std::mutex> lock(m_mtx);
     MakePacket(LOBOT_SERVO_ANGLE_OFFSET_ADJUST, id);
-    set8bitParam(angle, 0);
+    set8bitParam(angle_deg, 0);
     sendPacket();
 }
 

@@ -23,7 +23,7 @@ public:
     void RevriteId(int id);
     void ServoMoveTimeWrite(int id, int angle, int moveTime);
     void ServoMoveTimeWriteAndWait(int id, int angle, int moveTime);
-    void ServoAdjustAngleSet(int id, char angle);
+    void ServoAdjustAngleSet(int id, char angle_deg);
     void ServoMoveStart(int id);
     void ServoMoveStop(int id);
     void ServoAdjustAngleSave(int id);
